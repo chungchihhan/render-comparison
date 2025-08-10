@@ -1,103 +1,239 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useCallback, useState, memo } from "react";
+
+const Child = ({ label, onClick }: { label: string; onClick: () => void }) => {
+  const renderCount = React.useRef(0);
+  const [mounted, setMounted] = React.useState(false);
+  const [clicks, setClicks] = React.useState(0);
+
+  React.useEffect(() => {
+    renderCount.current += 1;
+    setMounted(true);
+    console.log(`${label} → Child render #${renderCount.current}`);
+  });
+
+  const handleChildClick = () => {
+    setClicks((c) => c + 1);
+    onClick?.();
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="rounded-2xl border p-4 mt-2">
+      <div className="text-sm opacity-70">{label}</div>
+      <div className="text-xs opacity-60">
+        render 次數：{mounted ? renderCount.current : "-"}
+      </div>
+      <div className="text-xs opacity-60">child clicks：{clicks}</div>
+      <button
+        className="mt-2 rounded-2xl border px-3 py-1.5 text-sm hover:shadow"
+        onClick={handleChildClick}
+      >
+        觸發 onClick()
+      </button>
+    </div>
+  );
+};
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+const MemoChild = memo(Child);
+
+export default function UseCallbackFourScenarios() {
+  return (
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 p-6">
+      <h1 className="text-2xl font-semibold">
+        useCallback × memo：四種情境 Demo
+      </h1>
+      <p className="opacity-70 mt-1 text-sm">
+        每個卡片互相獨立。打開瀏覽器 Console 觀察各情境的 render 日誌。
+      </p>
+      <div className="grid md:grid-cols-2 gap-6 mt-6">
+        <ScenarioA />
+        <ScenarioB />
+        <ScenarioC />
+        <ScenarioD />
+      </div>
+    </div>
+  );
+}
+
+function ScenarioA() {
+  const [count, setCount] = useState(0);
+  const handleClick = () => {
+    console.log("A.Child clicked");
+  };
+  return (
+    <Card title="A：無 memo、無 useCallback (子一定跟著渲染)">
+      <Expect
+        variant="bad"
+        msg="預期：子會重渲染"
+        note="父層 render 不比較 props，且 onClick 每次都是新參考。"
+      />
+      <Expect
+        variant="bad"
+        msg="預期：子會重渲染"
+        note="不比較 props，且 onClick 每次都是新參考"
+      />
+      <CounterRow count={count} onInc={() => setCount((c) => c + 1)} />
+      <Child label="A.Child" onClick={handleClick} />
+    </Card>
+  );
+}
+
+function ScenarioB() {
+  const [count, setCount] = useState(0);
+  const [dep, setDep] = useState(false);
+  const handleClick = useCallback(() => {
+    console.log("B.Child clicked, dep=", dep);
+  }, [dep]);
+  return (
+    <Card title="B：無 memo、有 useCallback (仍會渲染)">
+      <Expect
+        variant="bad"
+        msg="預期：子會重渲染"
+        note="沒有 memo，不做 props 比較；即使參考穩定一樣會 render。"
+      />
+      <Expect
+        variant="bad"
+        msg="預期：子會重渲染"
+        note="沒有 memo 不比較 props，即使參考穩定也會渲染"
+      />
+      <CounterRow count={count} onInc={() => setCount((c) => c + 1)} />
+      <ToggleRow
+        label="切換 useCallback 依賴 dep"
+        value={dep}
+        onToggle={() => setDep((v) => !v)}
+      />
+      <Child label="B.Child (無 memo)" onClick={handleClick} />
+    </Card>
+  );
+}
+
+function ScenarioC() {
+  const [count, setCount] = useState(0);
+  const handleClick = () => {
+    console.log("C.Child clicked");
+  };
+  return (
+    <Card title="C：有 memo、無 useCallback (仍會渲染)">
+      <Expect
+        variant="bad"
+        msg="預期：子會重渲染"
+        note="有 memo 但 onClick 每次都是新參考 → props 改變。"
+      />
+      <Expect
+        variant="bad"
+        msg="預期：子會重渲染"
+        note="有 memo 但 onClick 每次都是新參考 → props 改變"
+      />
+      <CounterRow count={count} onInc={() => setCount((c) => c + 1)} />
+      <MemoChild label="C.MemoChild" onClick={handleClick} />
+    </Card>
+  );
+}
+
+function ScenarioD() {
+  const [count, setCount] = useState(0);
+  const [dep, setDep] = useState(false);
+  const handleClick = useCallback(() => {}, [dep]);
+  return (
+    <Card title="D：有 memo、有 useCallback (理想搭配)">
+      <Expect
+        variant="good"
+        msg="預期：子可跳過渲染"
+        note="當 dep 不變時 onClick 參考穩定 → props 不變 → 跳過渲染；切換 dep 才會渲染。"
+      />
+      <Expect
+        variant="good"
+        msg="預期：子可跳過渲染"
+        note="dep 不變 → 參考穩定 → props 不變 → 跳過渲染"
+      />
+      <CounterRow count={count} onInc={() => setCount((c) => c + 1)} />
+      <ToggleRow
+        label="切換 useCallback 依賴 dep (讓子重新渲染)"
+        value={dep}
+        onToggle={() => setDep((v) => !v)}
+      />
+      <MemoChild label="D.MemoChild" onClick={handleClick} />
+    </Card>
+  );
+}
+
+function Expect({
+  msg,
+  note,
+  variant,
+}: {
+  msg: string;
+  note?: string;
+  variant?: "good" | "bad" | "warn";
+}) {
+  const bg =
+    variant === "good"
+      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+      : variant === "warn"
+      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+  return (
+    <div
+      className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${bg}`}
+    >
+      <span className="font-medium">{msg}</span>
+      {note ? <span className="opacity-70">— {note}</span> : null}
+    </div>
+  );
+}
+
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border p-4 shadow-sm bg-white/60 dark:bg-neutral-900/60">
+      <h2 className="font-medium text-lg">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function CounterRow({ count, onInc }: { count: number; onInc: () => void }) {
+  return (
+    <div className="flex items-center gap-3 mt-3">
+      <div className="text-sm">
+        父層 count：<span className="font-mono">{count}</span>
+      </div>
+      <button
+        className="rounded-2xl border px-3 py-1.5 text-sm hover:shadow"
+        onClick={onInc}
+      >
+        +1 父層重渲染
+      </button>
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  value,
+  onToggle,
+}: {
+  label: string;
+  value: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 mt-3">
+      <div className="text-sm">
+        {label}：<span className="font-mono">{String(value)}</span>
+      </div>
+      <button
+        className="rounded-2xl border px-3 py-1.5 text-sm hover:shadow"
+        onClick={onToggle}
+      >
+        切換
+      </button>
     </div>
   );
 }
